@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="theme-color" content="#0b0c10">
+<title>Telecomando TV</title>
+<style>
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body { margin: 0; background: #0b0c10; color: #fff; font: 16px/1.3 "Google Sans", Roboto, "Segoe UI", system-ui, sans-serif; user-select: none; overscroll-behavior: none; }
+  main { max-width: 520px; margin: 0 auto; padding: 16px 16px 96px; }
+  header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+  header b { font-size: 20px; }
+  #status { font-size: 13px; opacity: .6; }
+  #pad { height: 30vh; min-height: 180px; border-radius: 28px; background: radial-gradient(120% 120% at 50% 0%, #23252e, #14151b); border: 1px solid #ffffff1f; display: grid; place-items: center; touch-action: none; position: relative; }
+  #pad i { width: 64px; height: 64px; border-radius: 50%; border: 2px solid #ffffff40; transition: transform .15s, background .15s; }
+  #pad.hit i { transform: scale(.85); background: #ffffff30; }
+  #pad small { position: absolute; bottom: 12px; opacity: .45; font-size: 12px; }
+  .keys { display: flex; gap: 10px; margin: 12px 0 22px; }
+  button { font: inherit; color: inherit; border: 0; border-radius: 999px; background: #ffffff1a; padding: 12px 18px; flex: 1; font-weight: 600; }
+  button:active { background: #ffffff38; }
+  h3 { font-size: 14px; margin: 0 0 10px; opacity: .7; font-weight: 600; }
+  #keep { display: flex; gap: 10px; overflow-x: auto; margin: 0 -16px 22px; padding: 0 16px; scrollbar-width: none; }
+  .card { flex: none; width: 150px; height: 96px; border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; justify-content: flex-end; font-weight: 700; font-size: 14px; box-shadow: inset 0 -50px 40px -20px #000a; }
+  .card small { font-weight: 500; opacity: .75; font-size: 11px; }
+  #apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 10px; }
+  .app { text-align: center; font-size: 11px; font-weight: 600; }
+  .app div { aspect-ratio: 1; border-radius: 22%; display: grid; place-items: center; font-size: 28px; font-weight: 800; margin-bottom: 6px; box-shadow: inset 0 1px 0 #fff5; }
+  #askbtn { position: fixed; left: 16px; right: 16px; bottom: max(16px, env(safe-area-inset-bottom)); max-width: 488px; margin: 0 auto; padding: 16px; background: linear-gradient(90deg, #ffd9e8, #e6dcff); color: #1a1220; box-shadow: 0 10px 30px #0008; }
+  #sheet { position: fixed; inset: 0; background: #0b0c10f2; backdrop-filter: blur(20px); display: none; flex-direction: column; padding: 16px; }
+  #sheet.on { display: flex; }
+  #sheet header button { flex: none; }
+  #log { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 8px 0; user-select: text; }
+  .msg { max-width: 85%; padding: 10px 14px; border-radius: 18px; background: #ffffff14; align-self: flex-start; }
+  .msg.me { align-self: flex-end; background: #6b4cff; }
+  .msg.err { background: #5a1d1d; }
+  .choice { display: flex; gap: 8px; }
+  .choice button { flex: none; padding: 9px 18px; }
+  .choice .yes { background: #fff; color: #111; }
+  .chips { display: flex; gap: 8px; flex-wrap: wrap; }
+  .chips button { flex: none; font-size: 13px; padding: 9px 14px; font-weight: 500; }
+  form { display: flex; gap: 8px; padding-top: 10px; }
+  input { flex: 1; font: inherit; color: #fff; background: #ffffff14; border: 1px solid #ffffff26; border-radius: 999px; padding: 13px 18px; outline: none; min-width: 0; }
+  form button { flex: none; background: #fff; color: #111; }
+</style>
+</head>
+<body>
+<main>
+  <header><b>Telecomando</b><span id="status">…</span></header>
+  <div id="pad"><i></i><small>Scorri per muoverti · tocca per OK</small></div>
+  <div class="keys"><button data-key="Escape">← Indietro</button><button data-key="Enter">OK</button></div>
+  <h3>Continua a guardare</h3>
+  <div id="keep"></div>
+  <h3>App</h3>
+  <div id="apps"></div>
+</main>
+<button id="askbtn">✦ Chiedi cosa guardare</button>
+
+<section id="sheet">
+  <header><b>Chiedi cosa guardare</b><button id="close">Chiudi</button></header>
+  <div id="log"></div>
+  <div class="chips" id="chips"></div>
+  <form id="form"><input id="q" placeholder="Scrivi…" autocomplete="off" enterkeyhint="send"><button>Invia</button></form>
+</section>
+
+<script src="config.js"></script>
+<script>
+const apps = TV_CONFIG.apps.filter((a) => a.pkg);
+const $ = (s) => document.querySelector(s);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+
+async function cmd(body) {
+  try {
+    const r = await (await fetch("/cmd", { method: "POST", body: JSON.stringify(body) })).json();
+    $("#status").textContent = r.tvs ? "TV collegata" : "Nessuna TV collegata";
+  } catch { $("#status").textContent = "Server non raggiungibile"; }
+  navigator.vibrate?.(8);
+}
+const key = (k) => cmd({ type: "key", key: k });
+const launch = (app, title) => cmd({ type: "launch", app, title });
+
+// Trackpad: swipe = frecce, tocco = OK
+let start;
+const pad = $("#pad");
+pad.addEventListener("pointerdown", (e) => { start = [e.clientX, e.clientY]; pad.classList.add("hit"); pad.setPointerCapture(e.pointerId); });
+pad.addEventListener("pointerup", (e) => {
+  pad.classList.remove("hit"); if (!start) return;
+  const dx = e.clientX - start[0], dy = e.clientY - start[1]; start = null;
+  if (Math.hypot(dx, dy) < 24) return key("Enter");
+  key(Math.abs(dx) > Math.abs(dy) ? (dx > 0 ? "ArrowRight" : "ArrowLeft") : (dy > 0 ? "ArrowDown" : "ArrowUp"));
+});
+document.querySelectorAll("[data-key]").forEach((b) => (b.onclick = () => key(b.dataset.key)));
+
+const grad = (a) => `linear-gradient(160deg, ${a.color[0]}, ${a.color[1]})`;
+for (const a of apps) {
+  const item = el("div", "app"), icon = el("div", "", a.glyph);
+  icon.style.background = grad(a); icon.style.color = a.ink || "#fff";
+  item.append(icon, a.name); item.onclick = () => launch(a.id); $("#apps").append(item);
+  if (a.view === "hero") {
+    const s = a.hero.scene, card = el("div", "card", a.hero.title);
+    card.style.background = `linear-gradient(170deg, ${s.sky[1]}, ${s.ink})`;
+    card.append(el("small", "", a.name)); card.onclick = () => launch(a.id, a.hero.title); $("#keep").append(card);
+  }
+}
+
+// Chat con l'assistente
+const history = [], log = $("#log");
+const add = (text, cls = "") => { const m = el("div", "msg " + cls, text); log.append(m); log.scrollTop = log.scrollHeight; return m; };
+async function ask(text) {
+  if (!text.trim()) return;
+  log.querySelectorAll(".choice").forEach((c) => c.remove());
+  $("#chips").hidden = true; add(text, "me"); history.push({ role: "user", content: text });
+  const wait = add("…");
+  try {
+    const res = await fetch("/ask", { method: "POST", body: JSON.stringify({ messages: history }) });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error);
+    wait.textContent = data.reply; history.push({ role: "assistant", content: data.reply });
+    if (data.app) {
+      const row = el("div", "choice"), yes = el("button", "yes", "Riproduci"), no = el("button", "", "Non ora");
+      yes.onclick = () => { row.remove(); launch(data.app, data.title); add(`Fatto: ${data.title || "app"} sulla TV.`); };
+      no.onclick = () => row.remove();
+      row.append(yes, no); log.append(row);
+    }
+  } catch (e) { history.pop(); wait.classList.add("err"); wait.textContent = e.message || "Errore di rete."; }
+  log.scrollTop = log.scrollHeight;
+}
+for (const t of ["Cosa guardiamo stasera?", "Qualcosa di leggero, sotto un'ora", "Metti un po' di musica"]) {
+  const b = el("button", "", t); b.onclick = () => ask(t); $("#chips").append(b);
+}
+$("#form").onsubmit = (e) => { e.preventDefault(); const q = $("#q"); ask(q.value); q.value = ""; };
+$("#askbtn").onclick = () => { $("#sheet").classList.add("on"); $("#q").focus(); };
+$("#close").onclick = () => $("#sheet").classList.remove("on");
+cmd({ type: "hello" });
+</script>
+</body>
+</html>

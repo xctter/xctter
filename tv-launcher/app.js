@@ -212,6 +212,18 @@
   window.addEventListener("keydown", onKey);
   window.addEventListener("resize", () => select(state.app));
   $("#ambient").addEventListener("click", () => { wake(); setMode("home"); });
+  // Comandi dal telefono (remote.html), inoltrati da server.js
+  if (location.protocol.startsWith("http")) {
+    new EventSource("/events").onmessage = (e) => {
+      const m = JSON.parse(e.data);
+      if (m.type === "key") onKey({ key: m.key, preventDefault() {} });
+      else if (m.type === "launch") {
+        const i = apps.findIndex((a) => a.id === m.app); if (i < 0) return;
+        wake(); setMode("home"); state.zone = "dock"; select(i); launch(apps[i]);
+        if (m.title && !window.Android?.launchApp) showToast(`Riproduzione di ${m.title}…`);
+      }
+    };
+  }
   if (location.hash === "#home") setMode("home");
   wake();
 })();
