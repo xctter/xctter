@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Launcher</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div id="tv" class="mode-ambient">
+
+  <!-- Schermata ambient: scena + orologio + meteo -->
+  <section id="ambient">
+    <canvas id="ambient-scene"></canvas>
+    <div class="ambient-shade"></div>
+    <div class="ambient-info">
+      <div class="ambient-clock" data-clock></div>
+      <div class="ambient-city" data-city></div>
+      <div class="ambient-weather" data-weather></div>
+    </div>
+  </section>
+
+  <!-- Home: sfondo, anteprima dell'app, dock -->
+  <section id="home">
+    <div id="bg"></div>
+    <div class="home-shade"></div>
+    <div class="top-clock"><div data-clock></div><small data-date></small></div>
+    <div id="stage"></div>
+    <div id="pill"></div>
+    <div id="dock"></div>
+  </section>
+
+  <div id="toast"></div>
+</div>
+<script src="config.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,119 @@
+/* 1rem = 10px a 1920×1080: tutta l'interfaccia scala con la larghezza dello schermo */
+html { font-size: calc(100vw / 192); }
+* { box-sizing: border-box; }
+body {
+  margin: 0; height: 100vh; overflow: hidden; background: #000; color: #fff;
+  font-family: "Google Sans", "Product Sans", Roboto, "Segoe UI", system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased; cursor: default; user-select: none;
+}
+#tv { position: fixed; inset: 0; overflow: hidden; }
+section { position: absolute; inset: 0; transition: opacity .7s ease, transform .7s ease; }
+
+/* ---------- Ambient ---------- */
+#ambient-scene { position: absolute; inset: 0; width: 100%; height: 100%; animation: drift 60s ease-in-out infinite alternate; }
+@keyframes drift { from { transform: scale(1.02); } to { transform: scale(1.1) translateX(-1.5%); } }
+.ambient-shade { position: absolute; inset: 0; background: linear-gradient(20deg, rgba(0,0,0,.6) 0%, transparent 55%); }
+.ambient-info { position: absolute; left: 9rem; bottom: 9rem; text-shadow: 0 .2rem 2rem rgba(0,0,0,.5); }
+.ambient-clock { font-size: 15rem; font-weight: 700; letter-spacing: -.03em; line-height: 1; }
+.ambient-city { font-size: 3rem; font-weight: 600; margin-top: 2.4rem; }
+.ambient-weather { font-size: 2.2rem; opacity: .75; margin-top: .4rem; }
+
+.mode-ambient #home { opacity: 0; transform: scale(1.04); pointer-events: none; }
+.mode-home #ambient { opacity: 0; pointer-events: none; }
+
+/* ---------- Home: sfondo ---------- */
+#bg, #bg > div { position: absolute; inset: 0; }
+#bg > div { opacity: 0; transition: opacity .8s ease; }
+#bg > div.on { opacity: 1; }
+#bg canvas { width: 100%; height: 100%; display: block; }
+.blobs { background: #07080b; overflow: hidden; }
+.blobs i { position: absolute; width: 90rem; height: 90rem; border-radius: 50%; filter: blur(12rem); opacity: .8; animation: float 18s ease-in-out infinite alternate; }
+.blobs i:nth-child(1) { left: -30rem; top: -20rem; }
+.blobs i:nth-child(2) { right: -30rem; top: -10rem; animation-delay: -6s; }
+.blobs i:nth-child(3) { left: 50rem; bottom: -60rem; animation-delay: -12s; }
+@keyframes float { from { transform: translate(0,0) scale(1); } to { transform: translate(8rem, 6rem) scale(1.15); } }
+.home-shade { position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.8) 0%, rgba(0,0,0,.25) 32%, transparent 55%); }
+.hero-on .home-shade { background:
+  linear-gradient(0deg, rgba(0,0,0,.85) 0%, rgba(0,0,0,.2) 40%, transparent 60%),
+  linear-gradient(90deg, rgba(0,0,0,.7) 0%, rgba(0,0,0,.25) 45%, transparent 70%); }
+
+.top-clock { position: absolute; right: 7rem; top: 5rem; text-align: right; font-size: 4.2rem; font-weight: 700; text-shadow: 0 .2rem 1.5rem rgba(0,0,0,.5); }
+.top-clock small { display: block; font-size: 1.8rem; font-weight: 500; opacity: .7; text-transform: capitalize; }
+
+/* ---------- Anteprima ---------- */
+#stage { position: absolute; inset: 0; }
+#stage > div { position: absolute; animation: rise .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes rise { from { opacity: 0; transform: translateY(2.5rem) scale(.98); } }
+
+.glass {
+  left: 50%; top: 9rem; width: 112rem; height: 54rem; margin-left: -56rem; padding: 2.4rem;
+  border-radius: 4.4rem; background: rgba(18,19,24,.55); border: .15rem solid rgba(255,255,255,.14);
+  backdrop-filter: blur(4rem) saturate(1.4); -webkit-backdrop-filter: blur(4rem) saturate(1.4);
+  box-shadow: 0 4rem 10rem rgba(0,0,0,.45), inset 0 .1rem 0 rgba(255,255,255,.12);
+  display: flex; gap: 2rem;
+}
+.tile {
+  position: relative; flex: 1; border-radius: 2.6rem; overflow: hidden; padding: 2.4rem;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  transition: transform .25s, box-shadow .25s; background-size: cover;
+}
+.tile::after { content: ""; position: absolute; inset: 0; background: linear-gradient(0deg, rgba(0,0,0,.75), transparent 60%); }
+.tile > * { position: relative; z-index: 1; }
+.tile .tag { position: absolute; top: 2.2rem; left: 2.4rem; font-size: 1.4rem; font-weight: 700; letter-spacing: .08em; padding: .5rem 1.2rem; border-radius: 10rem; background: rgba(0,0,0,.45); }
+.tile b { font-size: 2.8rem; line-height: 1.15; }
+.tile span { font-size: 1.8rem; opacity: .75; margin-top: .6rem; }
+
+.grid { flex-direction: column; gap: 0; padding: 4.5rem 5rem; }
+.grid h2 { margin: 0; font-size: 4.4rem; }
+.grid p { margin: .8rem 0 3rem; font-size: 2rem; opacity: .65; }
+.grid .cells { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; }
+.cell { display: flex; align-items: center; gap: 1.8rem; padding: 1.8rem 2.2rem; border-radius: 2.2rem; background: rgba(255,255,255,.07); font-size: 2.2rem; font-weight: 600; transition: transform .25s, box-shadow .25s, background .25s; }
+.cell .icon { width: 6rem; height: 6rem; border-radius: 1.5rem; font-size: 2.6rem; flex: none; }
+
+.hero { left: 9rem; top: 17rem; width: 86rem; }
+.hero .kicker { font-size: 1.9rem; font-weight: 600; opacity: .85; }
+.hero h1 {
+  margin: 1.2rem 0 1.6rem; font: 700 10.5rem/1 Georgia, "Times New Roman", serif; letter-spacing: .08em;
+  -webkit-background-clip: text; background-clip: text; color: transparent; filter: drop-shadow(0 .4rem 1.2rem rgba(0,0,0,.5));
+}
+.hero .desc { font-size: 2.2rem; line-height: 1.4; max-width: 62rem; opacity: .9; text-shadow: 0 .1rem 1rem rgba(0,0,0,.6); }
+.hero .btns { display: flex; gap: 1.4rem; margin: 2.6rem 0 3rem; }
+.btn { font-size: 1.9rem; font-weight: 600; padding: 1.1rem 2.6rem; border-radius: 10rem; background: rgba(255,255,255,.16); backdrop-filter: blur(2rem); transition: transform .25s, background .25s, color .25s; }
+.hero .label { font-size: 1.7rem; font-weight: 600; opacity: .75; margin-bottom: 1.2rem; }
+.hero .row { display: flex; gap: 1.6rem; }
+.thumb { width: 23rem; height: 12.5rem; border-radius: 1.6rem; padding: 1.2rem 1.4rem; display: flex; align-items: flex-end; font-size: 1.6rem; font-weight: 600; background-size: cover; box-shadow: inset 0 -6rem 5rem -2rem rgba(0,0,0,.7); transition: transform .25s, box-shadow .25s; flex: none; }
+
+/* focus sui contenuti */
+.focus.tile, .focus.thumb, .focus.cell { transform: scale(1.05); box-shadow: 0 0 0 .4rem #fff, 0 2rem 5rem rgba(0,0,0,.5); z-index: 2; }
+.focus.cell { background: rgba(255,255,255,.18); }
+.focus.thumb { box-shadow: 0 0 0 .4rem #fff, inset 0 -6rem 5rem -2rem rgba(0,0,0,.7); }
+.focus.btn { background: #fff; color: #111; transform: scale(1.08); }
+
+/* ---------- Pillola azione ---------- */
+#pill {
+  position: absolute; left: 50%; bottom: 23rem; transform: translateX(-50%); white-space: nowrap;
+  display: flex; gap: 1.2rem; font-size: 1.7rem; font-weight: 600; transition: opacity .3s;
+}
+#pill span { padding: .8rem 2rem; border-radius: 10rem; background: rgba(255,255,255,.14); backdrop-filter: blur(2rem); }
+#pill span:first-child { background: rgba(255,255,255,.92); color: #111; }
+#pill span:empty { display: none; }
+
+/* ---------- Dock ---------- */
+#dock { position: absolute; left: 50%; bottom: 7rem; height: 12rem; display: flex; align-items: center; gap: 4.4rem; transition: transform .45s cubic-bezier(.2,.8,.2,1), opacity .3s; }
+.app { position: relative; width: 9rem; height: 9rem; flex: none; transition: transform .35s cubic-bezier(.2,.8,.2,1), opacity .35s; opacity: .8; }
+.icon {
+  width: 100%; height: 100%; border-radius: 2.2rem; display: grid; place-items: center;
+  font-size: 4rem; font-weight: 800; letter-spacing: -.04em;
+  box-shadow: 0 1rem 2.5rem rgba(0,0,0,.45), inset 0 .15rem 0 rgba(255,255,255,.35);
+}
+.app label { position: absolute; top: 100%; left: 50%; transform: translateX(-50%); margin-top: .9rem; font-size: 1.3rem; font-weight: 600; white-space: nowrap; opacity: 0; transition: opacity .3s; }
+.app.sel { transform: scale(1.38) translateY(-.8rem); opacity: 1; }
+.app.sel .icon { box-shadow: 0 0 0 .3rem rgba(255,255,255,.95), 0 1.5rem 4rem rgba(0,0,0,.55), inset 0 .15rem 0 rgba(255,255,255,.35); }
+.app.sel label { opacity: 1; }
+.zone-content #dock { opacity: .55; }
+.zone-content #pill { opacity: 0; }
+.zone-content .app.sel .icon { box-shadow: 0 1rem 2.5rem rgba(0,0,0,.45); }
+
+/* ---------- Toast ---------- */
+#toast { position: absolute; left: 50%; top: 5rem; transform: translate(-50%, -12rem); padding: 1.4rem 3rem; border-radius: 10rem; background: rgba(255,255,255,.95); color: #111; font-size: 2rem; font-weight: 600; transition: transform .4s cubic-bezier(.2,.8,.2,1); z-index: 10; }
+#toast.on { transform: translate(-50%, 0); }
