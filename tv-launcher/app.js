@@ -4,6 +4,18 @@
   const $ = (s) => document.querySelector(s);
   const tv = $("#tv"), bg = $("#bg"), stage = $("#stage"), pill = $("#pill"), dock = $("#dock"), toast = $("#toast");
 
+  // Sulla TV il wrapper Android espone window.Android (launchApp, getApps)
+  const native = window.Android;
+  const hue = (str) => [...str].reduce((h, c) => (h * 31 + c.charCodeAt(0)) % 360, 7);
+  function installedApps() {
+    if (!native?.getApps) return apps.filter((a) => a.pkg);
+    const known = Object.fromEntries(apps.filter((a) => a.pkg).map((a) => [a.pkg, a]));
+    return JSON.parse(native.getApps()).map((x) => known[x.pkg] || {
+      id: x.pkg, name: x.name, pkg: x.pkg, glyph: x.name.trim()[0].toUpperCase(),
+      color: [`hsl(${hue(x.pkg)} 65% 48%)`, `hsl(${hue(x.pkg)} 70% 28%)`],
+    }).sort((a, b) => a.name.localeCompare(b.name));
+  }
+
   const state = { mode: "ambient", zone: "dock", app: Math.min(2, apps.length - 1), row: 0, col: 0 };
 
   // ---------- Scene procedurali (nessuna immagine esterna) ----------
@@ -105,13 +117,14 @@
     tv.classList.toggle("hero-on", a.view === "hero");
   }
 
+  let gridApps = [];
   function renderStage(a) {
     let html;
     if (a.view === "cards") {
       html = `<div class="glass">${a.cards.map((c) =>
         `<div class="tile" data-row="0" style="background:${art(c.art)}"><em class="tag" style="font-style:normal">${esc(c.tag)}</em><b>${esc(c.title)}</b><span>${esc(c.sub)}</span></div>`).join("")}</div>`;
     } else if (a.view === "grid") {
-      const list = apps.filter((x) => x.pkg);
+      const list = (gridApps = installedApps());
       html = `<div class="glass grid"><h2>Tutte le app</h2><p>${list.length} app installate sulla TV</p><div class="cells">${list.map((x, i) =>
         `<div class="cell" data-row="${Math.floor(i / 4)}" data-app="${x.id}"><div class="icon" style="${iconStyle(x)}">${esc(x.glyph)}</div>${esc(x.name)}</div>`).join("")}</div></div>`;
     } else {
@@ -157,13 +170,12 @@
   // ---------- Azioni ----------
   function launch(a) {
     if (!a.pkg) { state.zone = "content"; paintFocus(); return; }
-    // Sulla TV il wrapper Android espone window.Android.launchApp(package)
-    if (window.Android?.launchApp) window.Android.launchApp(a.pkg);
-    else showToast(`Apertura di ${a.name}…`);
+    if (!native?.launchApp) showToast(`Apertura di ${a.name}…`);
+    else if (!native.launchApp(a.pkg)) showToast(`${a.name} non è installata su questa TV`);
   }
   function activate() {
     const el = focusRows()[state.row]?.[state.col];
-    launch(el?.dataset.app ? apps.find((x) => x.id === el.dataset.app) : apps[state.app]);
+    launch(el?.dataset.app ? gridApps.find((x) => x.id === el.dataset.app) : apps[state.app]);
   }
   let toastTimer;
   function showToast(msg) {
@@ -210,6 +222,9 @@
   tick(); setInterval(tick, 5000);
   weather(); setInterval(weather, 30 * 60 * 1000);
   window.addEventListener("keydown", onKey);
+  // Chiamate dal wrapper Android: tasti del telecomando e tasto Home
+  window.tvKey = (key) => onKey({ key, preventDefault() {} });
+  window.tvHome = () => { wake(); state.zone = "dock"; paintFocus(); setMode("home"); };
   window.addEventListener("resize", () => select(state.app));
   $("#ambient").addEventListener("click", () => { wake(); setMode("home"); });
   // Comandi dal telefono (remote.html), inoltrati da server.js
@@ -220,7 +235,7 @@
       else if (m.type === "launch") {
         const i = apps.findIndex((a) => a.id === m.app); if (i < 0) return;
         wake(); setMode("home"); state.zone = "dock"; select(i); launch(apps[i]);
-        if (m.title && !window.Android?.launchApp) showToast(`Riproduzione di ${m.title}…`);
+        if (m.title && !native?.launchApp) showToast(`Riproduzione di ${m.title}…`);
       }
     };
   }
